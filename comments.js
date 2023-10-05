@@ -1,56 +1,40 @@
-// create web server with express
-const express = require('express');
-const app = express();
-// create a port
-const port = 3000;
-// import comments
-const comments = require('./comments');
-// import body-parser
-const bodyParser = require('body-parser');
-// import cors
-const cors = require('cors');
-// use body-parser
-app.use(bodyParser.json());
-// use cors
-app.use(cors());
-// create a route
-app.get('/', (req, res) => {
-    res.send('Welcome to my JSON server!');
-});
-// create a route
-app.get('/comments', (req, res) => {
-    res.json(comments);
-});
-// create a route
-app.get('/comments/:id', (req, res) => {
-    const comment = comments.find(comment => comment.id === req.params.id);
-    res.json(comment);
-});
-// create a route
-app.post('/comments', (req, res) => {
-    const comment = {
-        id: comments.length + 1,
-        body: req.body.body,
-        postId: req.body.postId
-    };
-    comments.push(comment);
-    res.json(comment);
-});
-// create a route
-app.put('/comments/:id', (req, res) => {
-    const comment = comments.find(comment => comment.id === req.params.id);
-    comment.body = req.body.body;
-    comment.postId = req.body.postId;
-    res.json(comment);
-});
-// create a route
-app.delete('/comments/:id', (req, res) => {
-    const comment = comments.find(comment => comment.id === req.params.id);
-    const index = comments.indexOf(comment);
-    comments.splice(index, 1);
-    res.json(comment);
-});
-// start server
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
+// Create web server
+const express = require('express')
+const bodyParser = require('body-parser')
+const { randomBytes } = require('crypto') // Generate random string
+const cors = require('cors')
+
+const app = express()
+app.use(bodyParser.json())
+app.use(cors())
+
+// Create a comments object
+const commentsByPostId = {}
+
+// Create a route for getting comments
+app.get('/posts/:id/comments', (req, res) => {
+  res.send(commentsByPostId[req.params.id] || [])
+})
+
+// Create a route for creating comments
+app.post('/posts/:id/comments', (req, res) => {
+  const commentId = randomBytes(4).toString('hex') // Generate random string
+  const { content } = req.body // Get the content from the request body
+
+  // Get the comments array for the given post id
+  const comments = commentsByPostId[req.params.id] || []
+
+  // Add the new comment to the comments array
+  comments.push({ id: commentId, content })
+
+  // Update the comments array for the given post id
+  commentsByPostId[req.params.id] = comments
+
+  // Send the new comment back to the user
+  res.status(201).send(comments)
+})
+
+// Create a port for the server
+app.listen(4001, () => {
+  console.log('Listening on 4001')
+})
